@@ -1,0 +1,224 @@
+<!DOCTYPE html><html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>bd Team Tiktok Downloader</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Segoe UI', sans-serif;
+    }body {
+  color: #fff;
+  background: linear-gradient(to bottom, #0f0c29, #302b63, #24243e);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: auto;
+}
+
+.wrapper {
+  position: relative;
+  max-width: 340px;
+  width: 90%;
+  padding: 20px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.7);
+  box-shadow: 0 0 15px rgba(255, 0, 100, 0.3);
+  z-index: 2;
+  text-align: center;
+  animation: float 4s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+h1 {
+  font-size: 1.3rem;
+  margin-bottom: 16px;
+  color: #ff0055;
+}
+
+input {
+  width: 100%;
+  padding: 10px;
+  border-radius: 8px;
+  border: none;
+  outline: none;
+  margin-bottom: 10px;
+  font-size: 0.95rem;
+  text-align: center;
+}
+
+button {
+  padding: 10px;
+  font-size: 0.95rem;
+  background: #ff0055;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-top: 6px;
+  transition: 0.3s;
+}
+
+button:hover {
+  background: #ff3377;
+}
+
+.video-section, .profile-info {
+  margin-top: 15px;
+  display: none;
+}
+
+.profile-info p {
+  font-weight: bold;
+  color: #f0f0f0;
+  font-size: 0.95rem;
+}
+
+video {
+  width: 100%;
+  border-radius: 8px;
+  margin-top: 8px;
+}
+
+.hashtags {
+  color: #ffcc00;
+  font-size: 0.9rem;
+  margin: 10px 0;
+}
+
+.button-group {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.loading {
+  display: none;
+  margin-top: 10px;
+  color: #ccc;
+}
+
+.logo {
+  font-size: 2.5rem;
+  color: #fff;
+  margin-bottom: 10px;
+  animation: rotate 4s linear infinite;
+}
+
+@keyframes rotate {
+  0% { transform: rotate(0); }
+  100% { transform: rotate(360deg); }
+}
+
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="logo"><i class="fab fa-tiktok"></i></div>
+    <h1>bd TeamTikTok Downloader</h1>
+    <input type="text" id="url" placeholder="Paste TikTok Link Here" />
+    <button onclick="downloadVideo()">Download</button><div class="profile-info" id="profile-info">
+  <p id="nickname"></p>
+  <p id="username"></p>
+</div>
+
+<div class="video-section" id="video-section">
+  <video id="video" controls></video>
+  <p id="title"></p>
+  <p class="hashtags" id="hashtags"></p>
+  <div class="button-group">
+    <button onclick="copyHashtags()">Copy Hashtags</button>
+    <button id="download-video">Video</button>
+    <button id="download-audio">Audio</button>
+  </div>
+</div>
+
+<p id="message"></p>
+<p class="loading" id="loading">Loading...</p>
+
+  </div>  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>  <script>
+    async function tiktok2(query) {
+      try {
+        const encodedParams = new URLSearchParams();
+        encodedParams.set('url', query);
+        encodedParams.set('hd', '1');
+
+        const response = await axios.post('https://tikwm.com/api/', encodedParams, {
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+            'User-Agent': 'Mozilla/5.0'
+          }
+        });
+
+        const videoData = response.data.data;
+        return {
+          title: videoData.title,
+          hashtags: videoData.title.match(/#[\w]+/g) || [],
+          no_watermark: videoData.play,
+          music: videoData.music,
+          nickname: videoData.author.nickname,
+          username: videoData.author.unique_id
+        };
+      } catch (e) {
+        throw new Error("Video not found or API error.");
+      }
+    }
+
+    async function downloadVideo() {
+      const url = document.getElementById('url').value;
+      const message = document.getElementById('message');
+      const loading = document.getElementById('loading');
+      const profileInfo = document.getElementById('profile-info');
+      const videoSection = document.getElementById('video-section');
+
+      message.textContent = '';
+      profileInfo.style.display = 'none';
+      videoSection.style.display = 'none';
+      loading.style.display = 'block';
+
+      try {
+        const data = await tiktok2(url);
+        document.getElementById('nickname').textContent = data.nickname;
+        document.getElementById('username').textContent = '@' + data.username;
+        document.getElementById('title').textContent = data.title;
+        document.getElementById('video').src = data.no_watermark;
+        document.getElementById('hashtags').textContent = data.hashtags.join(' ');
+        profileInfo.style.display = 'block';
+        videoSection.style.display = 'block';
+
+        document.getElementById('download-video').onclick = () => downloadFile(data.no_watermark, 'video.mp4');
+        document.getElementById('download-audio').onclick = () => downloadFile(data.music, 'audio.mp3');
+      } catch (err) {
+        message.textContent = err.message;
+      } finally {
+        loading.style.display = 'none';
+      }
+    }
+
+    function copyHashtags() {
+      const text = document.getElementById('hashtags').textContent;
+      navigator.clipboard.writeText(text).then(() => {
+        alert("Hashtags copied!");
+      });
+    }
+
+    function downloadFile(url, filename) {
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+  </script></body>
+</html>
